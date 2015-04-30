@@ -5,19 +5,20 @@ import java.util.*;
 
 public class ComponentSearch {
     static int[][] matrix;
+    static ArrayList<Integer>[] adjList;
 
     public static void main(String[] args) {
         //readGraphFromConsole();
         //generateTests();
         //generateTestsForBFS();
         try {
-            FileWriter timeFile = new FileWriter("BFSstats(plotTests).txt");
+            FileWriter timeFile = new FileWriter("BFSstats(testsForBFS)(adjList).txt");
             PrintWriter out = new PrintWriter(timeFile);
-            for (int i = 1; i < 50; i++) {
-                readGraphFromFile(i);
+            for (int i = 1; i < 100; i++) {
+                readGraphFromFileAdjList(i);
 
                 long BFSstart = System.currentTimeMillis();
-                int answerBFS = bfs();
+                int answerBFS = dfsForAdjList();
                 long BFStime = System.currentTimeMillis() - BFSstart;
 
                 out.println(BFStime);
@@ -27,13 +28,13 @@ public class ComponentSearch {
             out.close();
             timeFile.close();
 
-            FileWriter timeFile2 = new FileWriter("DFSstats(plotTests).txt");
+            FileWriter timeFile2 = new FileWriter("DFSstats(testsForBFS)(adjList).txt");
             PrintWriter out2 = new PrintWriter(timeFile2);
-            for (int i = 1; i < 50; i++) {
-                readGraphFromFile(i);
+            for (int i = 1; i < 100; i++) {
+                readGraphFromFileAdjList(i);
 
                 long DFSstart = System.currentTimeMillis();
-                int answerDFS = dfs();
+                int answerDFS = bfsForAdjList();
                 long DFStime = System.currentTimeMillis() - DFSstart;
 
                 out2.println(DFStime);
@@ -112,19 +113,48 @@ public class ComponentSearch {
         int N = in.nextInt();
         System.out.print("Введите количество ребер: ");
         int M = in.nextInt();
-        matrix = new int[N + 1][N + 1];
+        //matrix = new int[N + 1][N + 1];
+        adjList=new ArrayList[N+1];
+        for (int j = 0; j < adjList.length; j++) {
+            adjList[j]=new ArrayList<Integer>();
+        }
         System.out.println("Введите номера вершин, инцидентных ребрам: ");
-        for (int i = 0; i < M; i++) {
-            int row = in.nextInt();
-            int column = in.nextInt();
-            matrix[row][column] = 1;
-            matrix[column][row] = 1;
+        for (int j = 0; j < M; j++) {
+            int firstVertex = in.nextInt();
+            int secondVertex = in.nextInt();
+            //matrix[row][column] = 1;
+            //matrix[column][row] = 1;
+            adjList[firstVertex].add(secondVertex);
+            adjList[secondVertex].add(firstVertex);
+        }
+    }
+
+    private static void readGraphFromFileAdjList(int numberOfFile){
+        try {
+            FileReader fileIn = new FileReader("testsForBFS/test" + numberOfFile + ".txt");
+            Scanner in = new Scanner(fileIn);
+            int N = in.nextInt();
+            int M = in.nextInt();
+            adjList=new ArrayList[N+1];
+            for (int j = 0; j < adjList.length; j++) {
+                adjList[j]=new ArrayList<Integer>();
+            }
+            for (int j = 0; j < M; j++) {
+                int firstVertex = in.nextInt();
+                int secondVertex = in.nextInt();
+                adjList[firstVertex].add(secondVertex);
+                adjList[secondVertex].add(firstVertex);
+            }
+            in.close();
+            fileIn.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     private static void readGraphFromFile(int numberOfFile) {
         try {
-            FileReader fileIn = new FileReader("plotTests/test" + numberOfFile + ".txt");
+            FileReader fileIn = new FileReader("tests/test" + numberOfFile + ".txt");
             Scanner in = new Scanner(fileIn);
             int N = in.nextInt();
             int M = in.nextInt();
@@ -142,6 +172,31 @@ public class ComponentSearch {
         }
     }
 
+    private static int bfsForAdjList() {
+        int componentNumber = 0;
+        ArrayDeque<Integer> vertexQueue = new ArrayDeque<Integer>(adjList.length);
+        int currentRoot = 1;
+        boolean[] visited = new boolean[adjList.length];
+
+        do {
+            vertexQueue.add(currentRoot);
+            while (!vertexQueue.isEmpty()) {
+                int currentVertex = vertexQueue.poll();
+                for (int i = 0; i < adjList[currentVertex].size(); i++) {
+                    if (visited[adjList[currentVertex].get(i)] == false) {
+                        vertexQueue.offer(adjList[currentVertex].get(i));
+                    }
+                }
+                visited[currentVertex] = true;
+            }
+            componentNumber++;
+            while (currentRoot < visited.length && visited[currentRoot] == true) {
+                currentRoot++;
+            }
+        } while (currentRoot < visited.length);
+        return componentNumber;
+    }
+
     private static int bfs() {
         int componentNumber = 0;
         ArrayDeque<Integer> vertexQueue = new ArrayDeque<Integer>(matrix.length);
@@ -156,6 +211,36 @@ public class ComponentSearch {
                     if ((matrix[currentVertex][i] == 1) && (visited[i] == false)) {
                         vertexQueue.offer(i);
                     }
+                }
+                visited[currentVertex] = true;
+            }
+            componentNumber++;
+            while (currentRoot < visited.length && visited[currentRoot] == true) {
+                currentRoot++;
+            }
+        } while (currentRoot < visited.length);
+        return componentNumber;
+    }
+
+    private static int dfsForAdjList() {
+        int componentNumber = 0;
+        LinkedList<Integer> vertexStack = new LinkedList();
+        int currentRoot = 1;
+        boolean[] visited = new boolean[adjList.length];
+
+        do {
+            vertexStack.push(currentRoot);
+            while (!vertexStack.isEmpty()) {
+                int currentVertex = vertexStack.peek();
+                int i=0;
+                for (; i < adjList[currentVertex].size() ; i++) {
+                    if (visited[adjList[currentVertex].get(i)] == false) {
+                        vertexStack.push(adjList[currentVertex].get(i));
+                        break;
+                    }
+                }
+                if(i==adjList[currentVertex].size()) {
+                    vertexStack.pop();
                 }
                 visited[currentVertex] = true;
             }
